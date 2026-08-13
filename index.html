@@ -80,8 +80,8 @@
   .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:18px; }
   .product-card{ background:var(--glass-bg); border:1px solid var(--glass-brd); border-radius:22px; backdrop-filter:blur(20px) saturate(150%); padding:20px; transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease; }
   .product-card:hover{ transform:translateY(-6px); border-color:var(--glass-brd-strong); box-shadow:0 24px 50px -20px rgba(47,107,255,0.35); }
-  .product-art{ height:150px; border-radius:14px; background:linear-gradient(150deg,rgba(47,107,255,0.18),rgba(255,255,255,0.03)); display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
-  .product-art svg{ width:70px; height:70px; }
+  .product-art{ height:150px; border-radius:14px; background:linear-gradient(150deg,rgba(47,107,255,0.18),rgba(255,255,255,0.03)); display:flex; align-items:center; justify-content:center; margin-bottom:16px; overflow:hidden; }
+  .product-art img{ width:100%; height:100%; object-fit:cover; display:block; }
   .stock-tag{ display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--mint); margin-bottom:8px; }
   .stock-dot{ width:6px; height:6px; border-radius:50%; background:var(--mint); }
   .product-name{ font-weight:600; font-size:15px; margin-bottom:4px; }
@@ -301,12 +301,18 @@
 /* ============ CONFIG ============ */
 const STORE_WHATSAPP_NUMBER = "2348114163517";
 
+/*
+  Add your real image path/URL to each product's "image" field below.
+  Local files: put them in an /images folder next to this HTML and use
+  a relative path like 'images/iphone-13.png'. Remote files: paste the
+  full https:// URL instead.
+*/
 const PRODUCTS = [
-  { id:'p1', name:'iPhone 12 Pro', specs:'128GB, Blue, 90% battery health', category:'phones', min:250000, max:300000 },
-  { id:'p2', name:'iPhone 13', specs:'256GB, Midnight, 95% battery health', category:'phones', min:340000, max:390000 },
-  { id:'p3', name:'HP EliteBook', specs:'i5, 8GB RAM, 256GB SSD, Silver', category:'laptops', min:320000, max:370000 },
-  { id:'p4', name:'MacBook Air M1', specs:'8GB RAM, 256GB SSD, Space Gray', category:'laptops', min:520000, max:600000 },
-  { id:'p5', name:'AirPods Pro (2nd gen)', specs:'With MagSafe case', category:'earbuds', min:95000, max:120000 },
+  { id:'p1', name:'iPhone 12 Pro', specs:'128GB, Blue, 90% battery health', category:'phones', min:250000, max:300000, image:'images/iphone-12-pro.png' },
+  { id:'p2', name:'iPhone 13', specs:'256GB, Midnight, 95% battery health', category:'phones', min:340000, max:390000, image:'images/iphone-13.png' },
+  { id:'p3', name:'HP EliteBook', specs:'i5, 8GB RAM, 256GB SSD, Silver', category:'laptops', min:320000, max:370000, image:'images/hp-elitebook.png' },
+  { id:'p4', name:'MacBook Air M1', specs:'8GB RAM, 256GB SSD, Space Gray', category:'laptops', min:520000, max:600000, image:'images/macbook-air-m1.png' },
+  { id:'p5', name:'AirPods Pro (2nd gen)', specs:'With MagSafe case', category:'earbuds', min:95000, max:120000, image:'images/airpods-pro-2.png' },
 ];
 
 const FAQ = [
@@ -324,17 +330,12 @@ function saveCart(){ localStorage.setItem('liusCart', JSON.stringify(cart)); upd
 function updateCartBadge(){ document.getElementById('cartBadge').textContent = cart.length; }
 
 /* ============ PRODUCT GRID (homepage) ============ */
-function deviceIcon(category){
-  if(category === 'phones') return '<svg viewBox="0 0 100 190" fill="none"><rect x="4" y="4" width="92" height="182" rx="20" stroke="#6EA8FF" stroke-width="2.5"/><rect x="14" y="18" width="72" height="140" rx="6" fill="rgba(110,168,255,0.12)"/></svg>';
-  if(category === 'laptops') return '<svg viewBox="0 0 160 110" fill="none"><rect x="4" y="4" width="152" height="88" rx="10" stroke="#6EA8FF" stroke-width="2.5"/><rect x="14" y="14" width="132" height="68" rx="3" fill="rgba(110,168,255,0.12)"/></svg>';
-  return '<svg viewBox="0 0 100 100" fill="none"><circle cx="30" cy="40" r="16" stroke="#6EA8FF" stroke-width="2.5"/><circle cx="70" cy="40" r="16" stroke="#6EA8FF" stroke-width="2.5"/><path d="M30 56v18a6 6 0 0 0 12 0" stroke="#6EA8FF" stroke-width="2.5"/><path d="M70 56v18a6 6 0 0 1 -12 0" stroke="#6EA8FF" stroke-width="2.5"/></svg>';
-}
 function fmtNaira(n){ return '\u20a6' + Math.round(n).toLocaleString(); }
 function renderGrid(){
   const grid = document.getElementById('productGrid');
   grid.innerHTML = PRODUCTS.map(p => `
     <div class="product-card">
-      <div class="product-art">${deviceIcon(p.category)}</div>
+      <div class="product-art"><img src="${p.image}" alt="${p.name}" loading="lazy"></div>
       <div class="stock-tag"><span class="stock-dot"></span>in stock</div>
       <div class="product-name">${p.name}</div>
       <div class="product-spec">${p.specs}</div>
