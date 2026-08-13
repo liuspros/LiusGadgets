@@ -442,6 +442,16 @@ function goToStep(step, data){
     })));
   }
 
+  else if(step === 'searchResults'){
+    const list = chatState.results || [];
+    addBotBubble(`I found ${list.length} matches${chatState.query ? ` for "${chatState.query}"` : ''}. Which one?`);
+    renderChips(list.map(p => ({
+      label:`${p.name} \u00b7 ${fmtNaira(p.min)}\u2013${fmtNaira(p.max)}`,
+      full:true,
+      action:() => goToStep('offer', { product:p })
+    })));
+  }
+
   else if(step === 'priceCheck'){
     const p = chatState.product;
     addBotBubble(`${p.name} (${p.specs}) usually goes for ${fmtNaira(p.min)}\u2013${fmtNaira(p.max)}. Want to make an offer?`);
@@ -634,16 +644,40 @@ function normalize(text){
   return text.toLowerCase().trim().replace(/[!?.,]/g,'');
 }
 
-function findProductInText(t){
-  // exact full-name match first
-  let match = PRODUCTS.find(p => t.includes(p.name.toLowerCase()));
-  if(match) return match;
-  // fall back to matching significant name tokens (ignore short filler words)
-  match = PRODUCTS.find(p => {
-    const tokens = p.name.toLowerCase().split(' ').filter(w => w.length > 2);
-    return tokens.every(tok => t.includes(tok));
-  });
-  return match || null;
+/* Split a string into lowercase word tokens, stripping punctuation. */
+function tokenize(str){
+  return str.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(Boolean);
+}
+
+/*
+  Find every product that could plausibly match what the user typed.
+  - If the user's words are a full match for a product's name words, that
+    product is an "exact" match (e.g. "macbook air m1").
+  - Otherwise, any product that shares at least one word with the user's text
+    is returned as a "partial" match (e.g. "iphone" partially matches every
+    iPhone, "iphone 12" partially matches iPhone 12 Pro more strongly than
+    iPhone 13), sorted best match first.
+  This replaces the old logic, which required every one of a product's
+  (length-filtered) name words to appear in the user's text — that silently
+  favored shorter product names like "iPhone 13" over "iPhone 12 Pro" and
+  could only ever return a single guess instead of letting the shopper pick.
+*/
+function findMatchingProducts(t){
+  const userWords = new Set(tokenize(t));
+  if(userWords.size === 0) return [];
+
+  const scored = PRODUCTS.map(p => {
+    const nameWords = tokenize(p.name);
+    const matched = nameWords.filter(w => userWords.has(w));
+    return { product:p, score:matched.length, total:nameWords.length };
+  }).filter(s => s.score > 0);
+
+  if(scored.length === 0) return [];
+
+  const exact = scored.filter(s => s.score === s.total);
+  if(exact.length > 0) return exact.map(s => s.product);
+
+  return scored.sort((a, b) => b.score - a.score).map(s => s.product);
 }
 
 function matchIntent(text){
@@ -655,11 +689,14 @@ function matchIntent(text){
   if(THANKS_WORDS.some(k => t.includes(k))) return { step:'thanks', data:{} };
   if(BYE_WORDS.some(k => t.includes(k))) return { step:'bye', data:{} };
 
-  const mentionedProduct = findProductInText(t);
+  const matchedProducts = findMatchingProducts(t);
   const isPriceIntent = PRICE_WORDS.some(k => t.includes(k));
 
-  if(mentionedProduct){
-    return { step: isPriceIntent ? 'priceCheck' : 'offer', data:{ product: mentionedProduct } };
+  if(matchedProducts.length === 1){
+    return { step: isPriceIntent ? 'priceCheck' : 'offer', data:{ product: matchedProducts[0] } };
+  }
+  if(matchedProducts.length > 1){
+    return { step:'searchResults', data:{ results: matchedProducts, query: text } };
   }
   if(isPriceIntent) return { step:'category', data:{} };
 
