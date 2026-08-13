@@ -60,6 +60,7 @@
     backdrop-filter:blur(24px) saturate(160%); -webkit-backdrop-filter:blur(24px) saturate(160%);
     box-shadow:0 30px 60px -20px rgba(0,0,0,0.6); overflow:hidden; cursor:pointer; transition:border-color .2s ease, transform .2s ease; }
   .device-card:hover{ border-color:var(--glass-brd-strong); }
+  .phoneimg{ width: 180px;}
   .device-card img{ width:100%; height:100%; object-fit:cover; display:block; }
   .card-1{ width:220px; height:420px; left:6%; top:10px; transform:rotate(-9deg); animation:drift1 7s ease-in-out infinite; }
   .card-2{ width:290px; height:290px; right:8%; top:60px; transform:rotate(7deg); animation:drift2 8s ease-in-out infinite; }
@@ -186,7 +187,7 @@
 
   <div class="float-stage">
     <div class="device-card card-1" onclick="openChatToCategory('phones')">
-      <img src="images/iphone17.png" alt="Phones">
+      <img class="phoneimg" src="images/iphone17.png" alt="Phones">
     </div>
     <div class="device-card card-2" onclick="openChatToCategory('laptops')">
       <img src="images/macbookneo.png" alt="Laptops">
