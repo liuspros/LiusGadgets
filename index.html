@@ -405,6 +405,27 @@ function goToStep(step, data){
     ]);
   }
 
+  else if(step === 'greeting'){
+    addBotBubble("Hey there! \ud83d\udc4b Welcome to Lius Gadgets \u2014 what can I help you find today?");
+    renderChips([
+      { label:'Browse gadgets', action:() => goToStep('category') },
+      { label:'Faq', action:() => goToStep('faqMenu') },
+      { label:'View cart', action:() => goToStep('viewCart') },
+    ]);
+  }
+
+  else if(step === 'thanks'){
+    addBotBubble("You're welcome! Let me know if there's anything else you need.");
+    renderChips([
+      { label:'Browse gadgets', action:() => goToStep('category') },
+      { label:'Faq', action:() => goToStep('faqMenu') },
+    ]);
+  }
+
+  else if(step === 'bye'){
+    addBotBubble("Alright, take care! We're here whenever you're ready to shop.");
+  }
+
   else if(step === 'category'){
     addBotBubble("What are you looking for?");
     const cats = [...new Set(PRODUCTS.map(p => p.category))];
@@ -419,6 +440,15 @@ function goToStep(step, data){
       full:true,
       action:() => goToStep('offer', { product:p })
     })));
+  }
+
+  else if(step === 'priceCheck'){
+    const p = chatState.product;
+    addBotBubble(`${p.name} (${p.specs}) usually goes for ${fmtNaira(p.min)}\u2013${fmtNaira(p.max)}. Want to make an offer?`);
+    renderChips([
+      { label:'Make an offer', action:() => goToStep('offer', { product:p }) },
+      { label:'See more gadgets', action:() => goToStep('category') },
+    ]);
   }
 
   else if(step === 'offer'){
@@ -595,8 +625,44 @@ function sendCartToWhatsApp(){
 }
 
 /* ============ FREE TEXT / KEYWORD MATCHING ============ */
+const GREETING_WORDS = ['hi','hello','hey','hiya','yo','good morning','good afternoon','good evening','how far','how are you','wetin dey happen','wassup',"what's up"];
+const THANKS_WORDS = ['thanks','thank you','thank u','thnks','tanks','tenk you','appreciate it','appreciated'];
+const BYE_WORDS = ['bye','goodbye','see you','see ya','later','gtg','i\'m done','im done','no more'];
+const PRICE_WORDS = ['how much','price','cost','pricing','how many is it','worth'];
+
+function normalize(text){
+  return text.toLowerCase().trim().replace(/[!?.,]/g,'');
+}
+
+function findProductInText(t){
+  // exact full-name match first
+  let match = PRODUCTS.find(p => t.includes(p.name.toLowerCase()));
+  if(match) return match;
+  // fall back to matching significant name tokens (ignore short filler words)
+  match = PRODUCTS.find(p => {
+    const tokens = p.name.toLowerCase().split(' ').filter(w => w.length > 2);
+    return tokens.every(tok => t.includes(tok));
+  });
+  return match || null;
+}
+
 function matchIntent(text){
-  const t = text.toLowerCase();
+  const t = normalize(text);
+
+  if(GREETING_WORDS.some(g => t === g || t.startsWith(g + ' ') || t.includes(' ' + g))) {
+    return { step:'greeting', data:{} };
+  }
+  if(THANKS_WORDS.some(k => t.includes(k))) return { step:'thanks', data:{} };
+  if(BYE_WORDS.some(k => t.includes(k))) return { step:'bye', data:{} };
+
+  const mentionedProduct = findProductInText(t);
+  const isPriceIntent = PRICE_WORDS.some(k => t.includes(k));
+
+  if(mentionedProduct){
+    return { step: isPriceIntent ? 'priceCheck' : 'offer', data:{ product: mentionedProduct } };
+  }
+  if(isPriceIntent) return { step:'category', data:{} };
+
   for(const f of FAQ){
     if(f.keywords.some(k => t.includes(k))) return { step:'faqAnswer', data:{ faq:f } };
   }
@@ -639,4 +705,3 @@ document.addEventListener('mousemove', (e) => {
 
 </body>
 </html>
-
